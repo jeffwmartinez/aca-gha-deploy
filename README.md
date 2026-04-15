@@ -25,4 +25,3 @@ Simple FastAPI app intended for hosting on Azure later (e.g., Azure Container Ap
 ## Notes
 
 - No container configuration yet, per request.
-- Workflow for Azure deployment can be added next.
