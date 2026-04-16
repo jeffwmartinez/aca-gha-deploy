@@ -26,6 +26,8 @@ jobs:
       ACA_ACR_NAME: ${{ vars.ACA_ACR_NAME }}
       ACA_LOCATION: ${{ vars.ACA_LOCATION }}
       ACA_TARGET_PORT: ${{ vars.ACA_TARGET_PORT || '8000' }}
+      IMAGE_NAME: gh-action/container-app
+      IMAGE_TAG: ${{ github.sha }}
 
     steps:
       - name: Checkout to the branch
@@ -36,20 +38,31 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and push container image to registry
-        uses: azure/container-apps-deploy-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
         with:
-          appSourcePath: ${{ github.workspace }}
-          dockerfilePath: Dockerfile
-          acrName: ${{ env.ACA_ACR_NAME }}
-          acrUsername: ${{ secrets.ACR_USERNAME }}
-          acrPassword: ${{ secrets.ACR_PASSWORD }}
-          imageToBuild: ${{ env.ACA_ACR_NAME }}.azurecr.io/gh-action/container-app:${{ github.sha }}
-          containerAppName: ${{ env.ACA_APP_NAME }}
-          resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ env.ACA_ENV_NAME }}
-          location: ${{ env.ACA_LOCATION }}
-          ingress: external
-          targetPort: ${{ env.ACA_TARGET_PORT }}
+          registry: ${{ env.ACA_ACR_NAME }}.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ github.workspace }}
+          file: Dockerfile
+          push: true
+          tags: ${{ env.ACA_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          az containerapp update \
+            --name "${{ env.ACA_APP_NAME }}" \
+            --resource-group "${{ env.ACA_RESOURCE_GROUP }}" \
+            --image "${{ env.ACA_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
+            --ingress external \
+            --target-port "${{ env.ACA_TARGET_PORT }}"
 
 

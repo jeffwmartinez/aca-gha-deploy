@@ -1,0 +1,79 @@
+# Workflow: how it works
+
+This workflow builds a Docker image for the FastAPI app, pushes it to Azure Container Registry, and updates the Azure Container App to use that image. It triggers on every push to `main` (or manually) and tags the image with the commit SHA so each run forces a new revision.
+
+## What it does
+
+- Checks out the repo so the Dockerfile and app code are available.
+- Logs in to Azure using the `AZURE_CREDENTIALS` secret.
+- Uses `azure/container-apps-deploy-action@v2` to build and push the image, then runs `az containerapp up` to update the app.
+
+## Behind the scenes (deploy-action)
+
+The deploy action wraps a few standard steps so you do not have to script them yourself:
+
+- Ensures the `containerapp` Azure CLI extension is installed on the runner.
+- Logs in to ACR using the provided username and password.
+- Runs `docker build` using the Dockerfile you point to and tags the image with `imageToBuild`.
+- Runs `docker push` to publish that image to ACR.
+- Calls `az containerapp up` with the image, ingress, and port settings to create or update the app.
+
+When you use a unique tag (like the commit SHA), the `az containerapp up` call forces a new revision because the image reference changes even if the app name stays the same.
+
+## Example workflow YAML
+
+```yaml
+name: Trigger auto deployment for jefmarti-aca-gha
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/jefmarti-aca-gha-AutoDeployTrigger-0a925bac-652d-4876-a51d-210466534b75.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #Not used when creds auth is configured
+      contents: read #Required when GH token is used to authenticate with private repo
+    env:
+      ACA_RESOURCE_GROUP: ${{ vars.ACA_RESOURCE_GROUP }}
+      ACA_APP_NAME: ${{ vars.ACA_APP_NAME }}
+      ACA_ENV_NAME: ${{ vars.ACA_ENV_NAME }}
+      ACA_ACR_NAME: ${{ vars.ACA_ACR_NAME }}
+      ACA_LOCATION: ${{ vars.ACA_LOCATION }}
+      ACA_TARGET_PORT: ${{ vars.ACA_TARGET_PORT || '8000' }}
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: Dockerfile
+          acrName: ${{ env.ACA_ACR_NAME }}
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
+          imageToBuild: ${{ env.ACA_ACR_NAME }}.azurecr.io/gh-action/container-app:${{ github.sha }}
+          containerAppName: ${{ env.ACA_APP_NAME }}
+          resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.ACA_ENV_NAME }}
+          location: ${{ env.ACA_LOCATION }}
+          ingress: external
+          targetPort: ${{ env.ACA_TARGET_PORT }}
+```
