@@ -44,7 +44,7 @@ jobs:
           acrName: ${{ env.ACA_ACR_NAME }}
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
-          imageToBuild: ${{ env.ACA_ACR_NAME }}.azurecr.io/gh-action/container-app:latest
+          imageToBuild: ${{ env.ACA_ACR_NAME }}.azurecr.io/gh-action/container-app:${{ github.sha }}
           containerAppName: ${{ env.ACA_APP_NAME }}
           resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ env.ACA_ENV_NAME }}
