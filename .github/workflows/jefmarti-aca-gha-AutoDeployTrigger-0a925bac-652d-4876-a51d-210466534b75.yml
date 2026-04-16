@@ -50,8 +50,6 @@ jobs:
           ingress: external
           targetPort: ${{ env.ACA_TARGET_PORT }}
           runtimeStack: "python:3.11"
-          environmentVariables: |
-            PORT=${{ env.ACA_TARGET_PORT }}
-            ORYX_RUNTIME_SCRIPT="uvicorn app.main:app --host 0.0.0.0 --port ${{ env.ACA_TARGET_PORT }}"
+          environmentVariables: PORT=${{ env.ACA_TARGET_PORT }} ORYX_RUNTIME_SCRIPT="uvicorn app.main:app --host 0.0.0.0 --port ${{ env.ACA_TARGET_PORT }}"
 
 
