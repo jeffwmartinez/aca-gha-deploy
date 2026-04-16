@@ -40,6 +40,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
+          dockerfilePath: Dockerfile
           acrName: ${{ env.ACA_ACR_NAME }}
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
@@ -50,8 +51,5 @@ jobs:
           location: ${{ env.ACA_LOCATION }}
           ingress: external
           targetPort: ${{ env.ACA_TARGET_PORT }}
-          runtimeStack: "python:3.11"
-          environmentVariables: PORT=${{ env.ACA_TARGET_PORT }}
-          yamlConfigPath: ${{ github.workspace }}/aca-containerapp.yaml
 
 
