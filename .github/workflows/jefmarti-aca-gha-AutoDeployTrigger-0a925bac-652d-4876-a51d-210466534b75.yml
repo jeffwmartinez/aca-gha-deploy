@@ -43,6 +43,7 @@ jobs:
           acrName: ${{ env.ACA_ACR_NAME }}
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
+          imageToBuild: ${{ env.ACA_ACR_NAME }}.azurecr.io/gh-action/container-app:latest
           containerAppName: ${{ env.ACA_APP_NAME }}
           resourceGroup: ${{ env.ACA_RESOURCE_GROUP }}
           containerAppEnvironment: ${{ env.ACA_ENV_NAME }}
@@ -50,6 +51,7 @@ jobs:
           ingress: external
           targetPort: ${{ env.ACA_TARGET_PORT }}
           runtimeStack: "python:3.11"
-          environmentVariables: PORT=${{ env.ACA_TARGET_PORT }} ORYX_RUNTIME_SCRIPT="uvicorn app.main:app --host 0.0.0.0 --port ${{ env.ACA_TARGET_PORT }}"
+          environmentVariables: PORT=${{ env.ACA_TARGET_PORT }}
+          yamlConfigPath: ${{ github.workspace }}/aca-containerapp.yaml
 
 
